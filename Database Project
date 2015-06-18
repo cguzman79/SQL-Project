@@ -1,0 +1,245 @@
+//Creating database//
+CREATE TABLE Advisors
+(
+AdvisorID uniqueidentifier CONSTRAINT advguid_default DEFAULT NEWSEQUENTIALID()ROWGUIDCOL,
+FirstName varchar(15),
+LastName varchar(15),
+EmailAddr varchar(40),
+CONSTRAINT Advisor_PK PRIMARY KEY(AdvisorID)
+);
+
+CREATE TABLE Students
+(
+StudentID uniqueidentifier CONSTRAINT studguid_default DEFAULT NEWSEQUENTIALID()ROWGUIDCOL,
+FirstName varchar(15),
+LastName varchar(15),
+BirthDate smalldatetime,
+Gender char(6),
+StartDate smalldatetime NOT NULL,
+GPA decimal(1),
+IsActive bit,
+Bio ntext,
+AdvisorID uniqueidentifier REFERENCES Advisors(AdvisorID),
+CONSTRAINT Student_PK PRIMARY KEY(StudentID)
+);
+
+CREATE TABLE Classes
+(
+ClassID uniqueidentifier CONSTRAINT classguid_default DEFAULT NEWSEQUENTIALID()ROWGUIDCOL,
+ClassCode char(3),
+ClassName varchar(40),
+Description ntext,
+CONSTRAINT Class_Pk PRIMARY KEY(ClassID)
+);
+
+CREATE TABLE Students_Classes
+(
+StudentClassID uniqueidentifier CONSTRAINT stud_classguid_default DEFAULT NEWSEQUENTIALID()ROWGUIDCOL,
+StudentID uniqueidentifier REFERENCES Students(StudentID),
+ClassID uniqueidentifier REFERENCES Classes(ClassID),
+ClassStartDate smalldatetime,
+Assignment1 decimal,
+Assignment2 decimal,
+Assignment3 decimal,
+Assignment4 decimal,
+ClassGPA decimal,
+CONSTRAINT StudentClass_PK PRIMARY KEY(StudentClassID)
+);
+
+//Populating the tables with information using INSERT statements.//
+INSERT INTO Classes
+  (ClassID,ClassCode,ClassName,Description)
+  VALUES (NEWID(),'ACCT306','Accounting 1','This course introduces accounting concepts and explores the accounting environment. It covers the basic structure of accounting, how to maintain accounts, use account balances to prepare financial statements, and complete the accounting cycle. It also introduces the concept of internal control and how to account for assets.');
+INSERT INTO Classes
+  (ClassID,ClassCode,ClassName,Description)
+  VALUES (NEWID(), 'CS362','Structured Query Language for Data Management','This course gives complete coverage of SQL, with an emphasis on storage, retrieval, and manipulation of data.');
+INSERT INTO Classes
+  (ClassID,ClassCode,ClassName,Description)
+  VALUES (NEWID(), 'ENG115','English Composition','In this course, students focus on developing writing skills through practice and revision. Students will examine expository, critical, and persuasive essay techniques.');
+INSERT INTO Classes
+  (ClassID,ClassCode,ClassName,Description)
+  VALUES (NEWID(),'FIN322','Investments','This course focuses on investments and investment strategies. Various investment vehicles such as stocks, bonds, and commodities are examined. Students will explore the principles of security analysis and valuation.');
+
+INSERT INTO Advisors  
+  (FirstName,LastName,EmailAddr)
+  VALUES ('Fred','Stone','fred@college.edu');
+INSERT INTO Advisors
+  (FirstName,LastName,EmailAddr)
+  VALUES ('Bob','Gordon','bob@college.edu');
+INSERT INTO Advisors
+  (FirstName,LastName,EmailAddr)
+  VALUES ('Jack','Simpson','jack@college.edu');
+
+INSERT INTO Students
+  (FirstName,LastName,BirthDate,Gender,StartDate,GPA,IsActive,Bio,AdvisorID)
+  VALUES ('Craig','Franklin','1970-03-15','Male','2010-05-30','3.10','Yes',NULL,'3');
+INSERT INTO Students
+  (FirstName,LastName,BirthDate,Gender,StartDate,GPA,IsActive,Bio,AdvisorID)
+  VALUES ('Harriet','Smith','1982-04-15','Female','2010-05-30','3.22','Yes',NULL,'1');
+INSERT INTO Students
+  (FirstName,LastName,BirthDate,Gender,StartDate,GPA,IsActive,Bio,AdvisorID)
+  VALUES ('George','David','1984-11-05','Male','2010-10-01','0.00','Yes',NULL,'3');
+INSERT INTO Students
+  (FirstName,LastName,BirthDate,Gender,StartDate,GPA,IsActive,Bio,AdvisorID)
+  VALUES ('Ben','Jefferson','1976-09-25','Male','2009-02-21','1.80','No','The student has gone on temporary leave to pursue other opportunities but plans on returning in 1 year.','3');
+
+
+//Using the UPDATE statement to modify information within the database.//
+UPDATE Students
+  SET BirthDate='1982-04-25', GPA='3.25'
+  WHERE LastName='Smith' AND FirstName='Harriet';
+
+
+//Using the DELETE statement to remove specific information from the database.//
+DELETE FROM Classes
+  WHERE ClassName='Investments';
+
+
+//Generating a list of records using the SELECT statement; Using WHERE to designate that I only want "active, male" students.//
+SELECT FirstName AS 'First', LastName AS 'Last', Gender, IsActive AS 'Active', AdvisorID
+FROM Students
+WHERE Gender='Male' AND AdvisorID='1' OR AdvisorID='3' AND IsActive='Yes'
+ORDER BY AdvisorID;
+
+
+//Generating a list of students that have an empty "Bio" field.//
+SELECT FirstName AS 'First', LastName AS 'Last', Bio
+FROM Students
+WHERE Bio IS NULL;
+
+
+//A query to generate a list of all classes in the "English" department.//
+SELECT ClassCode AS 'Code', ClassName AS 'Course', Description
+FROM Classes
+WHERE ClassCode LIKE 'ENG___';
+
+
+//A query to generate a list of all students and their advisors.  Also includes students' birthdate, gender, and GPA.//
+SELECT a.FirstName AS 'Adv-First',a.LastName AS 'Adv-Last',s.FirstName AS 'Stu-First',
+       s.LastName AS 'Stu-Last',s.BirthDate AS 'B-Date',s.Gender,s.GPA
+FROM Advisors a, Students s
+WHERE a.AdvisorID=s.AdvisorID
+ORDER BY a.LastName, s.LastName;
+
+
+//A query to generate a list of students born in the 1980's.//
+SELECT FirstName AS 'First', LastName AS 'Last', BirthDate AS 'B-Day'
+FROM Students
+WHERE BirthDate >= '1980-01-01' AND BirthDate<='1989-12-31'
+ORDER BY BirthDate;
+
+
+//A query that displays the average GPA for both male and female students.//
+SELECT AVG(GPA) AS 'AVG Female GPA'
+FROM Students
+WHERE Gender='Female';
+SELECT AVG(GPA) AS 'AVG Male GPA'
+FROM Students
+WHERE Gender='Male';
+
+
+//A query that displays all advisors and the number of active students assigned to each of them.//
+SELECT a.LastName AS 'Last',a.FirstName AS 'First', COUNT( s.StudentID ) AS "# of Students"
+FROM Advisors a, Students s
+WHERE a.AdvisorID = s.AdvisorID
+GROUP BY a.LastName,a.FirstName
+
+//A query that shows advisors that do not have more than one active student.//
+SELECT a.LastName AS 'Last',a.FirstName AS 'First', COUNT( s.StudentID ) AS "# of Students"
+FROM Advisors a, Students s
+WHERE a.AdvisorID = s.AdvisorID
+GROUP BY a.LastName,a.FirstName
+HAVING COUNT(s.StudentID)='1';
+
+//Creates a new table for Degree Programs and links it to the "Students" and "Classes" tables.//
+CREATE TABLE Degree_Programs
+(
+DegreePlanID uniqueidentifier CONSTRAINT deg_planguid_default DEFAULT NEWSEQUENTIALID()ROWGUIDCOL,
+StudentID uniqueidentifier REFERENCES Students(StudentID),
+ClassID uniqueidentifier REFERENCES Classes(ClassID),
+DegreeName varchar(800),
+Description varchar(800),
+CONSTRAINT DegreePlan_PK PRIMARY KEY(DegreePlanID)
+);
+
+//Populates the new table with information and assigns three students to a degree program.//
+INSERT INTO Degree_Programs
+  (DegreePlanID,StudentID,ClassID,DegreeName,Description)
+  VALUES (NEWID(),'52DEC4E2-B4CF-E211-94DA-DCA97109D809',
+  '3A6A6FC2-A8DB-4854-B6C6-91645602A8C6','English/Literature',
+  'Associates, Bachelors, Masters, Phd of Arts and Literature.');
+INSERT INTO Degree_Programs
+  (DegreePlanID,StudentID,ClassID,DegreeName,Description)
+  VALUES (NEWID(),'53DEC4E2-B4CF-E211-94DA-DCA97109D809',
+  '881C1B7E-56BF-4A6D-915F-99E6BE3B5ADA','Business Management',
+  'Associates, Bachelors, Masters, Phd in Business Management.');
+INSERT INTO Degree_Programs
+  (DegreePlanID,StudentID,ClassID,DegreeName,Description)
+  VALUES (NEWID(),'54DEC4E2-B4CF-E211-94DA-DCA97109D809',
+  '6CE1210A-BAB9-45FE-86F0-E255238A8DF4','Computer Science',
+  'Associates, Bachelors, Masters, Phd in Computer Science.');
+
+//Displays the students that are assigned to a degree program.//
+SELECT d.DegreePlanID AS 'Degree Code',d.DegreeName AS 'Degree Type',
+   s.StudentID AS 'Student ID#',c.ClassID AS 'Class ID#',c.ClassName AS 'Required Course',
+    s.LastName AS 'Last',s.FirstName AS 'First',d.Description
+FROM Degree_Programs d, Students s,Classes c
+WHERE d.StudentID=s.StudentID AND d.ClassID=c.ClassID
+ORDER BY d.DegreePlanID;
+
+
+//A scalar function that produces a list of students and their GPA within a given start and end date.//
+CREATE FUNCTION fnGPA(@studID uniqueidentifier, @ClassStartDateStart datetime, @ClassStartDateEnd datetime)
+RETURNS decimal(4,2)
+AS
+BEGIN
+RETURN( SELECT GPA 
+        FROM Students 
+	 WHERE StartDate BETWEEN @ClassStartDateStart AND @ClassStartDateEnd AND StudentID=@studID)
+END;
+GO
+
+
+//Function call to the above function.//
+SELECT dbo.fnGPA('53DEC4E2-B4CF-E211-94DA-DCA97109D809','2010-01-01','2010-12-31') 
+AS "Calculated Grade Point Average";
+
+
+//A stored procedure that will produce a grade book screen for a professor based on the 'ClassID'.//
+CREATE PROCEDURE spGradeBook @classID uniqueidentifier
+AS
+BEGIN
+   SELECT s.LastName AS 'Last',s.FirstName AS 'First',
+          sc.Assignment1 AS 'Grade # 1',
+          sc.Assignment2 AS 'Grade # 2',
+	   sc.Assignment3 AS 'Grade #3', 
+	   sc.Assignment4 AS 'Grade # 4',
+	   'Overall Grade AVG'=((sc.Assignment1)+(sc.Assignment2)+
+	   (sc.Assignment3)+(sc.Assignment4))/4 
+		    
+   FROM Students s,Students_Classes sc
+   WHERE s.StudentID=sc.StudentID AND ClassID=@classID;
+END
+
+//Call to execute the above stored procedure.//
+EXECUTE spGradeBook '881C1B7E-56BF-4A6D-915F-99E6BE3B5ADA'
+
+//Creation of INDEX for searches that will be frequently ran.//
+CREATE INDEX start
+ON Students(StartDate);
+	
+CREATE INDEX active
+ON Students(IsActive);
+	
+CREATE INDEX advEmail
+ON Advisors(EmailAddr);
+	
+CREATE INDEX classStart
+ON Students_Classes(ClassStartDate);
+
+
+
+
+
+
+
